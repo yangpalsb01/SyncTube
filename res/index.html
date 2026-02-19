@@ -239,119 +239,105 @@
   <script src="https://cdn.jsdelivr.net/npm/split-grid@1.0.11/dist/split-grid.min.js"></script>
   <script src="client.js"></script>
   <script src="js/custom.js"></script>
-<div id="custom-jukebox" style="position: fixed; top: 60px; right: 20px; width: 260px; height: 450px; background: rgba(26, 26, 26, 0.95); color: white; border: 2px solid #555; z-index: 999999; padding: 15px; overflow-y: auto; font-family: sans-serif; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.8);">
+<div id="custom-jukebox" style="position: fixed; top: 60px; right: 20px; width: 260px; height: 450px; background: #1a1a1a; color: white; border: 2px solid #555; z-index: 999999; padding: 15px; overflow-y: auto; font-family: sans-serif; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.8);">
     <h3 style="margin-top:0; font-size: 16px; border-bottom: 1px solid #444; padding-bottom: 8px;">🎵 나만의 주크박스</h3>
     
     <div style="margin-bottom: 12px; display: flex; gap: 5px;">
         <input type="text" id="new-list-input" placeholder="리스트명 입력" style="flex: 1; padding: 5px; background: #000; border: 1px solid #777; color: white; font-size: 12px;">
-        <button onclick="fn_createList()" style="padding: 5px 10px; background: #444; color: white; border: none; cursor: pointer; border-radius: 4px;">생성</button>
+        <button id="btn-create-list" style="padding: 5px 10px; background: #444; color: white; border: none; cursor: pointer; border-radius: 4px;">생성</button>
     </div>
 
     <div id="playlist-render-area" style="font-size: 13px;"></div>
 </div>
 
 <script>
-    // 1. 데이터 관리 (충돌 방지를 위해 접두사 추가)
-    const STORAGE_KEY = 'SYNC_TUBE_USER_DATA';
+(function() {
+    var STORAGE_KEY = 'SYNC_TUBE_FINAL_DATA';
 
-    function fn_getData() {
-        const raw = localStorage.getItem(STORAGE_KEY);
+    function getData() {
+        var raw = localStorage.getItem(STORAGE_KEY);
         return raw ? JSON.parse(raw) : {};
     }
 
-    function fn_saveData(obj) {
+    function saveData(obj) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
-        fn_render();
+        render();
     }
 
-    // 2. 리스트 생성
-    function fn_createList() {
-        const input = document.getElementById('new-list-input');
-        const listTitle = input.value.trim();
-        if (listTitle) {
-            const data = fn_getData();
-            if(!data[listTitle]) {
-                data[listTitle] = [];
-                input.value = '';
-                fn_saveData(data);
-            } else {
-                alert('이미 존재하는 이름입니다.');
-            }
-        }
-    }
-
-    // 3. 리스트 삭제
-    function fn_deleteList(title) {
-        if(confirm(`'${title}' 리스트를 삭제할까요?`)) {
-            const data = fn_getData();
-            delete data[title];
-            fn_saveData(data);
-        }
-    }
-
-    // 4. 노래 추가
-    function fn_addSong(title) {
-        const url = prompt(`[${title}]에 추가할 유튜브 주소를 입력하세요:`);
-        if (url && (url.includes('youtu.be') || url.includes('youtube.com'))) {
-            const data = fn_getData();
-            data[title].push(url);
-            fn_saveData(data);
-        }
-    }
-
-    // 5. 노래 재생 (입력창 자동 입력)
-    function fn_playSong(url) {
-        // SyncTube의 실제 입력창과 전송 버튼 찾기
-        const inputField = document.getElementById('url-input') || document.querySelector('.url-input');
-        if (inputField) {
-            inputField.value = url;
-            // 입력 신호 강제 발생
-            inputField.dispatchEvent(new Event('input', { bubbles: true }));
-            
-            // 엔터키 시뮬레이션
-            const enter = new KeyboardEvent('keydown', {
-                bubbles: true, keyCode: 13, key: 'Enter'
-            });
-            inputField.dispatchEvent(enter);
-            
-            // 만약 자동으로 안 올라가면 수동으로 추가 버튼을 눌러주어야 합니다.
-        }
-    }
-
-    // 6. 화면 그리기 (여기가 수정 핵심!)
-    function fn_render() {
-        const area = document.getElementById('playlist-render-area');
-        const data = fn_getData();
+    function render() {
+        var area = document.getElementById('playlist-render-area');
+        var data = getData();
         area.innerHTML = '';
 
-        Object.keys(data).forEach(title => {
-            const box = document.createElement('div');
+        // 충돌 방지를 위해 템플릿 리터럴(`) 대신 문자열 더하기(+) 방식 사용
+        Object.keys(data).forEach(function(title) {
+            var box = document.createElement('div');
             box.style.cssText = "background:#333; margin-bottom:10px; padding:10px; border-radius:8px; border:1px solid #444;";
             
-            // HTML 생성 시 변수명을 title로 명확히 고정
-            box.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                    <b style="color:#ffd700;">📂 ${title}</b>
-                    <span onclick="fn_deleteList('${title}')" style="color:#ff6666; cursor:pointer; font-weight:bold; font-size:16px;">×</span>
-                </div>
-                <button onclick="fn_addSong('${title}')" style="width:100%; font-size:11px; margin-bottom:8px; background:#555; border:none; color:white; cursor:pointer; padding:4px; border-radius:4px;">+ 곡 추가</button>
-                <div class="song-list">
-                    ${data[title].map((url, i) => {
-                        const videoId = url.split('v=')[1]?.split('&')[0] || 'Song';
-                        return `
-                            <div onclick="fn_playSong('${url}')" style="cursor:pointer; padding:5px; border-bottom:1px solid #444; font-size:11px; color:#ccc; overflow:hidden; text-overflow:ellipsis;">
-                                ${i+1}. ${videoId}
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-            `;
+            var html = '';
+            html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">';
+            html += '<b style="color:#ffd700;">📂 ' + title + '</b>';
+            html += '<span class="btn-del" data-title="' + title + '" style="color:#ff6666; cursor:pointer; font-weight:bold; font-size:16px;">×</span>';
+            html += '</div>';
+            html += '<button class="btn-add-song" data-title="' + title + '" style="width:100%; font-size:11px; margin-bottom:8px; background:#555; border:none; color:white; cursor:pointer; padding:4px; border-radius:4px;">+ 곡 추가</button>';
+            html += '<div class="song-list">';
+            
+            data[title].forEach(function(url, i) {
+                var vid = url.indexOf('v=') > -1 ? url.split('v=')[1].split('&')[0] : 'Song';
+                html += '<div class="btn-play-song" data-url="' + url + '" style="cursor:pointer; padding:5px; border-bottom:1px solid #444; font-size:11px; color:#ccc; overflow:hidden; text-overflow:ellipsis;">';
+                html += (i+1) + '. ' + vid + '</div>';
+            });
+            
+            html += '</div>';
+            box.innerHTML = html;
             area.appendChild(box);
+        });
+
+        // 이벤트 리스너 수동 연결 (onclick 충돌 방지)
+        area.querySelectorAll('.btn-del').forEach(function(el) {
+            el.onclick = function() {
+                var t = this.getAttribute('data-title');
+                if(confirm(t + ' 삭제할까요?')) {
+                    var d = getData(); delete d[t]; saveData(d);
+                }
+            };
+        });
+
+        area.querySelectorAll('.btn-add-song').forEach(function(el) {
+            el.onclick = function() {
+                var t = this.getAttribute('data-title');
+                var url = prompt(t + '에 추가할 주소:');
+                if(url && url.indexOf('youtube') > -1) {
+                    var d = getData(); d[t].push(url); saveData(d);
+                }
+            };
+        });
+
+        area.querySelectorAll('.btn-play-song').forEach(function(el) {
+            el.onclick = function() {
+                var url = this.getAttribute('data-url');
+                var input = document.getElementById('url-input') || document.querySelector('input[type="text"]');
+                if(input) {
+                    input.value = url;
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    var e = new KeyboardEvent('keydown', { bubbles: true, keyCode: 13, key: 'Enter' });
+                    input.dispatchEvent(e);
+                }
+            };
         });
     }
 
-    // 초기 실행
-    fn_render();
+    document.getElementById('btn-create-list').onclick = function() {
+        var input = document.getElementById('new-list-input');
+        var name = input.value.trim();
+        if(name) {
+            var d = getData();
+            if(!d[name]) { d[name] = []; input.value = ''; saveData(d); }
+        }
+    };
+
+    render();
+})();
 </script></body>
 
 </html>
