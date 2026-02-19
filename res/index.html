@@ -239,6 +239,17 @@
   <script src="https://cdn.jsdelivr.net/npm/split-grid@1.0.11/dist/split-grid.min.js"></script>
   <script src="client.js"></script>
   <script src="js/custom.js"></script>
+<div id="custom-jukebox" style="position: fixed; top: 60px; right: 20px; width: 280px; height: 500px; background: #1a1a1a; color: white; border: 2px solid #555; z-index: 999999; padding: 15px; overflow-y: auto; font-family: sans-serif; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.8);">
+    <h3 style="margin-top:0; font-size: 16px; border-bottom: 1px solid #444; padding-bottom: 8px;">🎵 나만의 주크박스</h3>
+    
+    <div style="margin-bottom: 12px; display: flex; gap: 5px;">
+        <input type="text" id="new-list-input" placeholder="리스트명 입력" style="flex: 1; padding: 5px; background: #000; border: 1px solid #777; color: white; font-size: 12px;">
+        <button id="btn-create-list" style="padding: 5px 10px; background: #444; color: white; border: none; cursor: pointer; border-radius: 4px;">생성</button>
+    </div>
+
+    <div id="playlist-render-area" style="font-size: 13px;"></div>
+</div>
+
 <script>
 (function() {
     var STORAGE_KEY = 'SYNC_TUBE_FINAL_DATA_V2';
