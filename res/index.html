@@ -264,66 +264,102 @@
         render();
     }
 
+    // 노래 한 곡을 대기열에 넣는 핵심 함수
+    function playSong(url) {
+        var input = document.getElementById('url-input') || document.querySelector('input[type="text"]');
+        if(input) {
+            input.value = url;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            var e = new KeyboardEvent('keydown', { bubbles: true, keyCode: 13, key: 'Enter' });
+            input.dispatchEvent(e);
+        }
+    }
+
+    // 리스트 전체 곡을 넣는 함수 (셔플 옵션 포함)
+    function playAll(title, isShuffle) {
+        var data = getData();
+        var songs = data[title] || [];
+        if(songs.length === 0) return;
+
+        var targetSongs = songs.slice(); // 복사본 생성
+        if(isShuffle) {
+            targetSongs.sort(function() { return Math.random() - 0.5; });
+        }
+
+        // 서버 부하를 줄이기 위해 0.5초 간격으로 한 곡씩 투입
+        var i = 0;
+        var timer = setInterval(function() {
+            if(i >= targetSongs.length) {
+                clearInterval(timer);
+                return;
+            }
+            playSong(targetSongs[i]);
+            i++;
+        }, 500);
+    }
+
     function render() {
         var area = document.getElementById('playlist-render-area');
         var data = getData();
         area.innerHTML = '';
 
-        // 충돌 방지를 위해 템플릿 리터럴(`) 대신 문자열 더하기(+) 방식 사용
         Object.keys(data).forEach(function(title) {
             var box = document.createElement('div');
             box.style.cssText = "background:#333; margin-bottom:10px; padding:10px; border-radius:8px; border:1px solid #444;";
             
             var html = '';
             html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">';
-            html += '<b style="color:#ffd700;">📂 ' + title + '</b>';
+            html += '<b class="btn-play-all" data-title="' + title + '" style="color:#ffd700; cursor:pointer; text-decoration:underline;" title="클릭시 전체 일괄추가">📂 ' + title + '</b>';
             html += '<span class="btn-del" data-title="' + title + '" style="color:#ff6666; cursor:pointer; font-weight:bold; font-size:16px;">×</span>';
             html += '</div>';
-            html += '<button class="btn-add-song" data-title="' + title + '" style="width:100%; font-size:11px; margin-bottom:8px; background:#555; border:none; color:white; cursor:pointer; padding:4px; border-radius:4px;">+ 곡 추가</button>';
-            html += '<div class="song-list">';
             
+            html += '<div style="display:flex; gap:3px; margin-bottom:8px;">';
+            html += '<button class="btn-add-song" data-title="' + title + '" style="flex:2; font-size:11px; background:#555; border:none; color:white; cursor:pointer; padding:4px; border-radius:4px;">+ 곡 추가</button>';
+            html += '<button class="btn-shuffle" data-title="' + title + '" style="flex:1; font-size:11px; background:#4466aa; border:none; color:white; cursor:pointer; padding:4px; border-radius:4px;">셔플재생</button>';
+            html += '</div>';
+            
+            html += '<div class="song-list">';
             data[title].forEach(function(url, i) {
                 var vid = url.indexOf('v=') > -1 ? url.split('v=')[1].split('&')[0] : 'Song';
-                html += '<div class="btn-play-song" data-url="' + url + '" style="cursor:pointer; padding:5px; border-bottom:1px solid #444; font-size:11px; color:#ccc; overflow:hidden; text-overflow:ellipsis;">';
+                html += '<div class="btn-single-song" data-url="' + url + '" style="cursor:pointer; padding:5px; border-bottom:1px solid #444; font-size:11px; color:#ccc; overflow:hidden; text-overflow:ellipsis;">';
                 html += (i+1) + '. ' + vid + '</div>';
             });
-            
             html += '</div>';
+            
             box.innerHTML = html;
             area.appendChild(box);
         });
 
-        // 이벤트 리스너 수동 연결 (onclick 충돌 방지)
+        // 1. 리스트 이름 클릭 (일괄 추가)
+        area.querySelectorAll('.btn-play-all').forEach(function(el) {
+            el.onclick = function() { playAll(this.getAttribute('data-title'), false); };
+        });
+
+        // 2. 셔플 버튼 클릭
+        area.querySelectorAll('.btn-shuffle').forEach(function(el) {
+            el.onclick = function() { playAll(this.getAttribute('data-title'), true); };
+        });
+
+        // 3. 곡 삭제
         area.querySelectorAll('.btn-del').forEach(function(el) {
             el.onclick = function() {
                 var t = this.getAttribute('data-title');
-                if(confirm(t + ' 삭제할까요?')) {
-                    var d = getData(); delete d[t]; saveData(d);
-                }
+                if(confirm(t + ' 삭제할까요?')) { var d = getData(); delete d[t]; saveData(d); }
             };
         });
 
+        // 4. 단일 곡 추가
         area.querySelectorAll('.btn-add-song').forEach(function(el) {
             el.onclick = function() {
                 var t = this.getAttribute('data-title');
                 var url = prompt(t + '에 추가할 주소:');
-                if(url && url.indexOf('youtube') > -1) {
-                    var d = getData(); d[t].push(url); saveData(d);
-                }
+                if(url && url.indexOf('youtube') > -1) { var d = getData(); d[t].push(url); saveData(d); }
             };
         });
 
-        area.querySelectorAll('.btn-play-song').forEach(function(el) {
-            el.onclick = function() {
-                var url = this.getAttribute('data-url');
-                var input = document.getElementById('url-input') || document.querySelector('input[type="text"]');
-                if(input) {
-                    input.value = url;
-                    input.dispatchEvent(new Event('input', { bubbles: true }));
-                    var e = new KeyboardEvent('keydown', { bubbles: true, keyCode: 13, key: 'Enter' });
-                    input.dispatchEvent(e);
-                }
-            };
+        // 5. 단일 곡 클릭
+        area.querySelectorAll('.btn-single-song').forEach(function(el) {
+            el.onclick = function() { playSong(this.getAttribute('data-url')); };
         });
     }
 
