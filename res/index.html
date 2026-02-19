@@ -239,20 +239,9 @@
   <script src="https://cdn.jsdelivr.net/npm/split-grid@1.0.11/dist/split-grid.min.js"></script>
   <script src="client.js"></script>
   <script src="js/custom.js"></script>
-<div id="custom-jukebox" style="position: fixed; top: 60px; right: 20px; width: 280px; height: 500px; background: #1a1a1a; color: white; border: 2px solid #555; z-index: 999999; padding: 15px; overflow-y: auto; font-family: sans-serif; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.8);">
-    <h3 style="margin-top:0; font-size: 16px; border-bottom: 1px solid #444; padding-bottom: 8px;">🎵 나만의 주크박스</h3>
-    
-    <div style="margin-bottom: 12px; display: flex; gap: 5px;">
-        <input type="text" id="new-list-input" placeholder="리스트명 입력" style="flex: 1; padding: 5px; background: #000; border: 1px solid #777; color: white; font-size: 12px;">
-        <button id="btn-create-list" style="padding: 5px 10px; background: #444; color: white; border: none; cursor: pointer; border-radius: 4px;">생성</button>
-    </div>
-
-    <div id="playlist-render-area" style="font-size: 13px;"></div>
-</div>
-
 <script>
 (function() {
-    var STORAGE_KEY = 'SYNC_TUBE_FINAL_DATA_V2'; // 버전 업그레이드
+    var STORAGE_KEY = 'SYNC_TUBE_FINAL_DATA_V2';
 
     function getData() {
         var raw = localStorage.getItem(STORAGE_KEY);
@@ -264,32 +253,40 @@
         render();
     }
 
+    // 1. 명령어 전송기 (clear, skip 등)
+    function sendCommand(cmd) {
+        var input = document.getElementById('url-input') || document.querySelector('input[type="text"]');
+        if(input) {
+            input.value = cmd;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, keyCode: 13, key: 'Enter' }));
+        }
+    }
+
+    // 2. 노래 투입
     function playSong(url) {
         var input = document.getElementById('url-input') || document.querySelector('input[type="text"]');
         if(input) {
             input.value = url;
             input.dispatchEvent(new Event('input', { bubbles: true }));
-            var e = new KeyboardEvent('keydown', { bubbles: true, keyCode: 13, key: 'Enter' });
-            input.dispatchEvent(e);
+            input.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, keyCode: 13, key: 'Enter' }));
         }
     }
 
+    // 3. 리스트 완전 교체 (현재 곡 중단 포함)
     function replacePlaylist(title, isShuffle) {
         var data = getData();
         var list = data[title] || [];
         if(list.length === 0) return;
 
-        // 1. 대기열 비우기 (/clear)
-        var input = document.getElementById('url-input') || document.querySelector('input[type="text"]');
-        if(input) {
-            input.value = '/clear';
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-            input.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, keyCode: 13, key: 'Enter' }));
-        }
+        // [핵심] 대기열 비우기 + 현재 곡 강제 종료(스킵)
+        sendCommand('/clear');
+        setTimeout(function() { sendCommand('/skip'); }, 200); 
 
         var targetSongs = list.slice();
         if(isShuffle) targetSongs.sort(function() { return Math.random() - 0.5; });
 
+        // 기존 곡이 완전히 밀려나도록 충분한 간격(1초) 후 새 리스트 투입
         setTimeout(function() {
             var i = 0;
             var timer = setInterval(function() {
@@ -297,7 +294,7 @@
                 playSong(targetSongs[i].url);
                 i++;
             }, 700);
-        }, 800);
+        }, 1000);
     }
 
     function render() {
@@ -334,7 +331,6 @@
             area.appendChild(box);
         });
 
-        // 이벤트 바인딩
         area.querySelectorAll('.btn-play-all').forEach(function(el) {
             el.onclick = function() { replacePlaylist(this.getAttribute('data-title'), false); };
         });
@@ -351,7 +347,7 @@
             el.onclick = function() {
                 var t = this.getAttribute('data-title');
                 var url = prompt('유튜브 주소를 입력하세요:');
-                if(url && url.indexOf('youtube') > -1 || url.indexOf('youtu.be') > -1) {
+                if(url && (url.indexOf('youtube') > -1 || url.indexOf('youtu.be') > -1)) {
                     var sName = prompt('곡의 제목(이름)을 입력하세요:', '새 노래');
                     var d = getData(); 
                     d[t].push({url: url, name: sName}); 
