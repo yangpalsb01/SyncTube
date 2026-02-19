@@ -6,59 +6,13 @@
   <meta http-equiv="content-type" content="text/html; charset=UTF-8">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="manifest.json">
   <title>SyncTube</title>
+  <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
   <link id="usertheme" href="css/des.css" rel="stylesheet">
   <link id="customcss" href="css/custom.css" rel="stylesheet">
-  
-  <style>
-    /* 1. 전체 배경 강제 화이트화 */
-    html, body, #main, #video, #chat, .gutter {
-        background-color: #f5f5f5 !important;
-        background-image: none !important;
-        color: #333333 !important;
-    }
-
-    /* 2. 각 섹션 박스 디자인 */
-    #player, #playlist, #chat, .info, .metadata, #chat-inputs-wrapper, #userlist-wrap {
-        background-color: #ffffff !important;
-        border: 1px solid #e0e0e0 !important;
-        color: #333333 !important;
-    }
-
-    /* 3. 제목 및 텍스트 가독성 */
-    h2, h3, h4, .video-info h2, .playlist-info h3, #usercount, .message {
-        color: #333333 !important;
-    }
-
-    /* 4. 입력창 및 버튼 (주크박스 스타일과 통일) */
-    input[type="text"], textarea, #chatline, #mediaurl {
-        background-color: #fdfdfd !important;
-        border: 1px solid #cccccc !important;
-        color: #333 !important;
-    }
-
-    button, .btn {
-        background-color: #333333 !important;
-        color: #ffffff !important;
-        border: none !important;
-    }
-
-    /* 5. 대기열(Playlist) 내부 아이템 */
-    .queue_sortable li, .playlist-item {
-        background-color: #ffffff !important;
-        border-bottom: 1px solid #f0f0f0 !important;
-        color: #444 !important;
-    }
-
-    /* 6. 아이콘 색상 (어두운 배경용 흰색 아이콘을 검은색으로) */
-    ion-icon {
-        color: #333333 !important;
-    }
-    button ion-icon {
-        color: #ffffff !important; /* 버튼 안의 아이콘은 흰색 유지 */
-    }
-  </style>
-
   <script type="module" src="https://cdn.jsdelivr.net/npm/ionicons@7.4.0/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule="" src="https://cdn.jsdelivr.net/npm/ionicons@7.4.0/dist/ionicons/ionicons.js"></script>
 </head>
