@@ -239,12 +239,12 @@
   <script src="https://cdn.jsdelivr.net/npm/split-grid@1.0.11/dist/split-grid.min.js"></script>
   <script src="client.js"></script>
   <script src="js/custom.js"></script>
-<div id="custom-jukebox" style="position: fixed; top: 60px; right: 20px; width: 280px; height: 500px; background: #1a1a1a; color: white; border: 2px solid #555; z-index: 999999; padding: 15px; overflow-y: auto; font-family: sans-serif; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.8);">
-    <h3 style="margin-top:0; font-size: 16px; border-bottom: 1px solid #444; padding-bottom: 8px;">🎵 나만의 주크박스</h3>
+<div id="custom-jukebox" style="position: fixed; top: 60px; right: 20px; width: 280px; height: 500px; background: #ffffff; color: #333333; border: 1px solid #e0e0e0; z-index: 999999; padding: 18px; overflow-y: auto; font-family: 'Pretendard', 'Segoe UI', sans-serif; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+    <h3 style="margin-top:0; font-size: 16px; font-weight: 700; border-bottom: 2px solid #333333; padding-bottom: 10px; color: #333333; letter-spacing: -0.5px;">🎵 JUKEBOX</h3>
     
-    <div style="margin-bottom: 12px; display: flex; gap: 5px;">
-        <input type="text" id="new-list-input" placeholder="리스트명 입력" style="flex: 1; padding: 5px; background: #000; border: 1px solid #777; color: white; font-size: 12px;">
-        <button id="btn-create-list" style="padding: 5px 10px; background: #444; color: white; border: none; cursor: pointer; border-radius: 4px;">생성</button>
+    <div style="margin-bottom: 15px; display: flex; gap: 6px;">
+        <input type="text" id="new-list-input" placeholder="리스트명" style="flex: 1; padding: 8px 10px; background: #fdfdfd; border: 1px solid #cccccc; color: #333; font-size: 13px; border-radius: 4px;">
+        <button id="btn-create-list" style="padding: 8px 14px; background: #333333; color: #ffffff; border: none; cursor: pointer; border-radius: 4px; font-weight: 600; font-size: 12px;">생성</button>
     </div>
 
     <div id="playlist-render-area" style="font-size: 13px;"></div>
@@ -264,14 +264,10 @@
         render();
     }
 
-    // [강화된 비우기] 이미지의 X 버튼을 정확히 찾아 누릅니다.
     function forceClearQueue(callback) {
-        // 1순위: 상단 전체 삭제 버튼 (이미지 우측 상단 X)
         var allClear = document.querySelector('.playlist-controls .fa-times') || 
                        document.querySelector('button[title="Clear playlist"]') ||
                        document.querySelector('.btn-clear-playlist');
-
-        // 2순위: 개별 곡 삭제 버튼 (이미지 각 노래 옆 x)
         var eachClear = document.querySelectorAll('.playlist-item .fa-times, .btn-remove, [title="Remove"]');
 
         if (allClear) {
@@ -300,21 +296,20 @@
         var list = data[title] || [];
         if(list.length === 0) return;
 
-        // 비우기 버튼 강제 실행 후 곡 투입
         forceClearQueue(function() {
             var targetSongs = list.slice();
             if(isShuffle) targetSongs.sort(function() { return Math.random() - 0.5; });
-
-            var i = 0;
-            var timer = setInterval(function() {
-                if(i >= targetSongs.length) { clearInterval(timer); return; }
-                playSong(targetSongs[i].url);
-                i++;
-            }, 800); 
+            setTimeout(function() {
+                var i = 0;
+                var timer = setInterval(function() {
+                    if(i >= targetSongs.length) { clearInterval(timer); return; }
+                    playSong(targetSongs[i].url);
+                    i++;
+                }, 800);
+            }, 1000);
         });
     }
 
-// ... (나머지 render 및 createList 함수는 이전과 동일)
     function render() {
         var area = document.getElementById('playlist-render-area');
         var data = getData();
@@ -322,25 +317,25 @@
 
         Object.keys(data).forEach(function(title) {
             var box = document.createElement('div');
-            box.style.cssText = "background:#333; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #444;";
+            box.style.cssText = "background: #f8f9fa; margin-bottom: 12px; padding: 12px; border-radius: 8px; border: 1px solid #eeeeee;";
             
             var html = '';
-            html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">';
-            html += '<b class="btn-play-all" data-title="' + title + '" style="color:#ffd700; cursor:pointer; text-decoration:underline;">📂 ' + title + '</b>';
-            html += '<span class="btn-del-list" data-title="' + title + '" style="color:#ff6666; cursor:pointer; font-weight:bold;">×</span>';
+            html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">';
+            html += '<b class="btn-play-all" data-title="' + title + '" style="color:#333; cursor:pointer; font-size:14px; text-decoration:none; border-bottom: 1px solid #333;">📂 ' + title + '</b>';
+            html += '<span class="btn-del-list" data-title="' + title + '" style="color:#999; cursor:pointer; font-size:18px;">&times;</span>';
             html += '</div>';
             
-            html += '<div style="display:flex; gap:3px; margin-bottom:8px;">';
-            html += '<button class="btn-add-song" data-title="' + title + '" style="flex:2; font-size:11px; background:#555; border:none; color:white; cursor:pointer; padding:4px; border-radius:4px;">+ 곡 추가</button>';
-            html += '<button class="btn-shuffle" data-title="' + title + '" style="flex:1; font-size:11px; background:#4466aa; border:none; color:white; cursor:pointer; padding:4px; border-radius:4px;">셔플</button>';
+            html += '<div style="display:flex; gap:4px; margin-bottom:10px;">';
+            html += '<button class="btn-add-song" data-title="' + title + '" style="flex:2; font-size:11px; background:#ffffff; border:1px solid #cccccc; color:#333; cursor:pointer; padding:5px; border-radius:4px;">+ 곡 추가</button>';
+            html += '<button class="btn-shuffle" data-title="' + title + '" style="flex:1; font-size:11px; background:#333333; border:none; color:#ffffff; cursor:pointer; padding:5px; border-radius:4px;">셔플</button>';
             html += '</div>';
             
             html += '<div class="song-list">';
             data[title].forEach(function(song, i) {
-                html += '<div style="display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px solid #444; font-size:11px;">';
-                html += '<div class="btn-single-play" data-url="' + song.url + '" style="cursor:pointer; color:#ccc; flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;" title="' + song.url + '">';
-                html += (i+1) + '. ' + (song.name || '제목 없음') + '</div>';
-                html += '<span class="btn-del-song" data-title="' + title + '" data-index="' + i + '" style="color:#888; cursor:pointer; margin-left:5px; font-weight:bold;"> - </span>';
+                html += '<div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #ebebeb; font-size:12px;">';
+                html += '<div class="btn-single-play" data-url="' + song.url + '" style="cursor:pointer; color:#555; flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">';
+                html += (i+1) + '. ' + (song.name || 'Untitled') + '</div>';
+                html += '<span class="btn-del-song" data-title="' + title + '" data-index="' + i + '" style="color:#bbb; cursor:pointer; margin-left:8px;">&minus;</span>';
                 html += '</div>';
             });
             html += '</div>';
@@ -349,51 +344,19 @@
             area.appendChild(box);
         });
 
-        area.querySelectorAll('.btn-play-all').forEach(function(el) {
-            el.onclick = function() { replacePlaylist(this.getAttribute('data-title'), false); };
-        });
-        area.querySelectorAll('.btn-shuffle').forEach(function(el) {
-            el.onclick = function() { replacePlaylist(this.getAttribute('data-title'), true); };
-        });
-        area.querySelectorAll('.btn-del-list').forEach(function(el) {
-            el.onclick = function() {
-                var t = this.getAttribute('data-title');
-                if(confirm(t + ' 리스트 전체를 삭제할까요?')) { var d = getData(); delete d[t]; saveData(d); }
-            };
-        });
-        area.querySelectorAll('.btn-add-song').forEach(function(el) {
-            el.onclick = function() {
-                var t = this.getAttribute('data-title');
-                var url = prompt('유튜브 주소를 입력하세요:');
-                if(url && (url.indexOf('youtube') > -1 || url.indexOf('youtu.be') > -1)) {
-                    var sName = prompt('곡의 제목(이름)을 입력하세요:', '새 노래');
-                    var d = getData(); 
-                    d[t].push({url: url, name: sName}); 
-                    saveData(d);
-                }
-            };
-        });
-        area.querySelectorAll('.btn-single-play').forEach(function(el) {
-            el.onclick = function() { playSong(this.getAttribute('data-url')); };
-        });
-        area.querySelectorAll('.btn-del-song').forEach(function(el) {
-            el.onclick = function() {
-                var t = this.getAttribute('data-title');
-                var idx = this.getAttribute('data-index');
-                var d = getData();
-                d[t].splice(idx, 1);
-                saveData(d);
-            };
-        });
+        // 이벤트 바인딩 (이전과 동일)
+        area.querySelectorAll('.btn-play-all').forEach(function(el) { el.onclick = function() { replacePlaylist(this.getAttribute('data-title'), false); }; });
+        area.querySelectorAll('.btn-shuffle').forEach(function(el) { el.onclick = function() { replacePlaylist(this.getAttribute('data-title'), true); }; });
+        area.querySelectorAll('.btn-del-list').forEach(function(el) { el.onclick = function() { var t = this.getAttribute('data-title'); if(confirm(t + ' 리스트를 삭제할까요?')) { var d = getData(); delete d[t]; saveData(d); } }; });
+        area.querySelectorAll('.btn-add-song').forEach(function(el) { el.onclick = function() { var t = this.getAttribute('data-title'); var url = prompt('유튜브 주소:'); if(url && url.indexOf('yout') > -1) { var sName = prompt('곡 제목:', '새 곡'); var d = getData(); d[t].push({url: url, name: sName}); saveData(d); } }; });
+        area.querySelectorAll('.btn-single-play').forEach(function(el) { el.onclick = function() { playSong(this.getAttribute('data-url')); }; });
+        area.querySelectorAll('.btn-del-song').forEach(function(el) { el.onclick = function() { var t = this.getAttribute('data-title'); var idx = this.getAttribute('data-index'); var d = getData(); d[t].splice(idx, 1); saveData(d); }; });
     }
 
     document.getElementById('btn-create-list').onclick = function() {
         var input = document.getElementById('new-list-input');
         var name = input.value.trim();
-        if(name) {
-            var d = getData();
-            if(!d[name]) { d[name] = []; input.value = ''; saveData(d); }
-        }
+        if(name) { var d = getData(); if(!d[name]) { d[name] = []; input.value = ''; saveData(d); } }
     };
 
     render();
