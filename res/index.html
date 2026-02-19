@@ -239,6 +239,91 @@
   <script src="https://cdn.jsdelivr.net/npm/split-grid@1.0.11/dist/split-grid.min.js"></script>
   <script src="client.js"></script>
   <script src="js/custom.js"></script>
-</body>
+<div id="custom-jukebox" style="position: fixed; top: 10px; right: 10px; width: 250px; height: 90vh; background: #1a1a1a; color: white; border: 2px solid #444; z-index: 9999; padding: 15px; overflow-y: auto; font-family: sans-serif; border-radius: 8px; box-shadow: -5px 0 15px rgba(0,0,0,0.5);">
+    <h3 style="margin-top:0; border-bottom: 1px solid #444; padding-bottom: 10px;">📻 주크박스 관리</h3>
+    
+    <div style="margin-bottom: 15px;">
+        <input type="text" id="new-list-name" placeholder="리스트 이름 (예: 전투)" style="width: 70%; padding: 5px; background: #333; border: 1px solid #555; color: white;">
+        <button onclick="createList()" style="width: 25%; padding: 5px; cursor: pointer;">생성</button>
+    </div>
+
+    <hr style="border: 0; border-top: 1px solid #444;">
+
+    <div id="playlist-container"></div>
+</div>
+
+<script>
+    let playlists = JSON.parse(localStorage.getItem('myPlaylists')) || {};
+
+    function save() {
+        localStorage.setItem('myPlaylists', JSON.stringify(playlists));
+        renderPlaylists();
+    }
+
+    function createList() {
+        const name = document.getElementById('new-list-name').value;
+        if (name && !playlists[name]) {
+            playlists[name] = [];
+            document.getElementById('new-list-name').value = '';
+            save();
+        }
+    }
+
+    function deleteList(name) {
+        if(confirm(name + ' 리스트를 삭제할까요?')) {
+            delete playlists[name];
+            save();
+        }
+    }
+
+    function addSong(listName) {
+        const url = prompt(listName + '에 추가할 유튜브 주소를 넣으세요:');
+        if (url && url.includes('youtube.com')) {
+            playlists[listName].push(url);
+            save();
+        }
+    }
+
+    function playSong(url) {
+        const inputField = document.querySelector('input[type="text"]') || document.querySelector('#url-input');
+        const addBtn = document.querySelector('button[type="submit"]') || document.querySelector('#add-btn');
+        
+        if (inputField) {
+            inputField.value = url;
+            alert('노래 주소가 입력창에 복사되었습니다. "추가" 버튼을 눌러주세요!');
+            // 자동으로 추가 버튼까지 누르게 하려면 아래 주석을 해제하세요 (사이트 구조마다 다름)
+            // if(addBtn) addBtn.click();
+        }
+    }
+
+    function renderPlaylists() {
+        const container = document.getElementById('playlist-container');
+        container.innerHTML = '';
+
+        for (const name in playlists) {
+            const section = document.createElement('div');
+            section.style.marginBottom = '20px';
+            section.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <strong style="color: #ffd700;">📂 ${name}</strong>
+                    <button onclick="deleteList('${name}')" style="background:none; border:none; color:#ff4444; cursor:pointer;">[X]</button>
+                </div>
+                <div style="margin: 5px 0;">
+                    <button onclick="addSong('${name}')" style="font-size: 11px; padding: 2px 5px; cursor:pointer;">+ 곡 추가</button>
+                </div>
+                <ul id="ul-${name}" style="list-style: none; padding-left: 5px; font-size: 13px;">
+                    ${playlists[name].map((url, idx) => `
+                        <li style="margin-bottom: 5px; cursor: pointer; color: #aaa;" onclick="playSong('${url}')">
+                            🎵 곡 ${idx + 1} <span style="font-size: 10px;">(클릭시 입력)</span>
+                        </li>
+                    `).join('')}
+                </ul>
+            `;
+            container.appendChild(section);
+        }
+    }
+
+    renderPlaylists();
+</script></body>
 
 </html>
