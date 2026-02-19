@@ -264,49 +264,60 @@
         render();
     }
 
-    // 1. 명령어 전송기 (clear, skip 등)
-    function sendCommand(cmd) {
+    // 1. 명령어 전송 함수 (지연 시간 추가)
+    function sendCommand(cmd, callback) {
         var input = document.getElementById('url-input') || document.querySelector('input[type="text"]');
         if(input) {
             input.value = cmd;
             input.dispatchEvent(new Event('input', { bubbles: true }));
-            input.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, keyCode: 13, key: 'Enter' }));
+            var e = new KeyboardEvent('keydown', { bubbles: true, keyCode: 13, key: 'Enter' });
+            input.dispatchEvent(e);
+            if(callback) setTimeout(callback, 400); // 명령어 간 최소 0.4초 간격
         }
     }
 
-    // 2. 노래 투입
     function playSong(url) {
         var input = document.getElementById('url-input') || document.querySelector('input[type="text"]');
         if(input) {
             input.value = url;
             input.dispatchEvent(new Event('input', { bubbles: true }));
-            input.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, keyCode: 13, key: 'Enter' }));
+            var e = new KeyboardEvent('keydown', { bubbles: true, keyCode: 13, key: 'Enter' });
+            input.dispatchEvent(e);
         }
     }
 
-    // 3. 리스트 완전 교체 (현재 곡 중단 포함)
+    // 2. 리스트 교체 (비우기 -> 스킵 -> 곡 투입 순서 강제)
     function replacePlaylist(title, isShuffle) {
         var data = getData();
         var list = data[title] || [];
         if(list.length === 0) return;
 
-        // [핵심] 대기열 비우기 + 현재 곡 강제 종료(스킵)
-        sendCommand('/clear');
-        setTimeout(function() { sendCommand('/skip'); }, 200); 
+        // [핵심 로직 수정] 계단식 실행
+        // 1단계: 대기열 비우기
+        sendCommand('/clear', function() {
+            // 2단계: 현재 곡 끄기
+            sendCommand('/skip', function() {
+                
+                // 3단계: 새 리스트 준비
+                var targetSongs = list.slice();
+                if(isShuffle) targetSongs.sort(function() { return Math.random() - 0.5; });
 
-        var targetSongs = list.slice();
-        if(isShuffle) targetSongs.sort(function() { return Math.random() - 0.5; });
-
-        // 기존 곡이 완전히 밀려나도록 충분한 간격(1초) 후 새 리스트 투입
-        setTimeout(function() {
-            var i = 0;
-            var timer = setInterval(function() {
-                if(i >= targetSongs.length) { clearInterval(timer); return; }
-                playSong(targetSongs[i].url);
-                i++;
-            }, 700);
-        }, 1000);
+                // 4단계: 충분히 비워진 후(1.5초 후) 새 곡 투입 시작
+                setTimeout(function() {
+                    var i = 0;
+                    var timer = setInterval(function() {
+                        if(i >= targetSongs.length) { clearInterval(timer); return; }
+                        playSong(targetSongs[i].url);
+                        i++;
+                    }, 800); // 곡 투입 간격도 0.8초로 늘려 안정성 확보
+                }, 1500);
+                
+            });
+        });
     }
+
+    // ... (render 함수 및 다른 로직은 이전과 동일하므로 생략하거나 기존 것 유지)
+    // 아래는 render 함수 내 이벤트 바인딩 부분만 교체된 형태입니다.
 
     function render() {
         var area = document.getElementById('playlist-render-area');
