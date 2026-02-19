@@ -264,18 +264,23 @@
         render();
     }
 
-    // 1. 명령어 전송 함수 (지연 시간 추가)
-    function sendCommand(cmd, callback) {
-        var input = document.getElementById('url-input') || document.querySelector('input[type="text"]');
-        if(input) {
-            input.value = cmd;
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-            var e = new KeyboardEvent('keydown', { bubbles: true, keyCode: 13, key: 'Enter' });
-            input.dispatchEvent(e);
-            if(callback) setTimeout(callback, 400); // 명령어 간 최소 0.4초 간격
+    // 1. 대기열 강제 비우기 (화면의 삭제 버튼들을 직접 클릭)
+    function forceClearQueue(callback) {
+        // SyncTube의 대기열 아이템들을 모두 찾습니다.
+        // 보통 'queue-item' 클래스나 삭제 버튼 클래스를 타겟팅합니다.
+        var deleteButtons = document.querySelectorAll('.queue-item .remove, .btn-remove-song, [title="Remove"]');
+        
+        if (deleteButtons.length > 0) {
+            deleteButtons.forEach(function(btn) { btn.click(); });
+            // 버튼을 누른 후 서버에 반영될 시간을 잠깐 줍니다.
+            setTimeout(callback, 500);
+        } else {
+            // 지울 게 없다면 바로 다음 단계로
+            callback();
         }
     }
 
+    // 2. 노래 투입 함수
     function playSong(url) {
         var input = document.getElementById('url-input') || document.querySelector('input[type="text"]');
         if(input) {
@@ -286,39 +291,27 @@
         }
     }
 
-    // 2. 리스트 교체 (비우기 -> 스킵 -> 곡 투입 순서 강제)
+    // 3. 리스트 교체 (비우기 -> 곡 투입)
     function replacePlaylist(title, isShuffle) {
         var data = getData();
         var list = data[title] || [];
         if(list.length === 0) return;
 
-        // [핵심 로직 수정] 계단식 실행
-        // 1단계: 대기열 비우기
-        sendCommand('/clear', function() {
-            // 2단계: 현재 곡 끄기
-            sendCommand('/skip', function() {
-                
-                // 3단계: 새 리스트 준비
-                var targetSongs = list.slice();
-                if(isShuffle) targetSongs.sort(function() { return Math.random() - 0.5; });
+        // [핵심] 화면상의 모든 삭제 버튼을 클릭하여 비우기 시도
+        forceClearQueue(function() {
+            var targetSongs = list.slice();
+            if(isShuffle) targetSongs.sort(function() { return Math.random() - 0.5; });
 
-                // 4단계: 충분히 비워진 후(1.5초 후) 새 곡 투입 시작
-                setTimeout(function() {
-                    var i = 0;
-                    var timer = setInterval(function() {
-                        if(i >= targetSongs.length) { clearInterval(timer); return; }
-                        playSong(targetSongs[i].url);
-                        i++;
-                    }, 800); // 곡 투입 간격도 0.8초로 늘려 안정성 확보
-                }, 1500);
-                
-            });
+            var i = 0;
+            var timer = setInterval(function() {
+                if(i >= targetSongs.length) { clearInterval(timer); return; }
+                playSong(targetSongs[i].url);
+                i++;
+            }, 600); 
         });
     }
 
-    // ... (render 함수 및 다른 로직은 이전과 동일하므로 생략하거나 기존 것 유지)
-    // 아래는 render 함수 내 이벤트 바인딩 부분만 교체된 형태입니다.
-
+    // ... (나머지 render 및 createList 함수는 이전과 동일)
     function render() {
         var area = document.getElementById('playlist-render-area');
         var data = getData();
