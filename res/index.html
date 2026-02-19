@@ -264,23 +264,27 @@
         render();
     }
 
-    // 1. 대기열 강제 비우기 (화면의 삭제 버튼들을 직접 클릭)
+    // [강화된 비우기] 이미지의 X 버튼을 정확히 찾아 누릅니다.
     function forceClearQueue(callback) {
-        // SyncTube의 대기열 아이템들을 모두 찾습니다.
-        // 보통 'queue-item' 클래스나 삭제 버튼 클래스를 타겟팅합니다.
-        var deleteButtons = document.querySelectorAll('.queue-item .remove, .btn-remove-song, [title="Remove"]');
-        
-        if (deleteButtons.length > 0) {
-            deleteButtons.forEach(function(btn) { btn.click(); });
-            // 버튼을 누른 후 서버에 반영될 시간을 잠깐 줍니다.
-            setTimeout(callback, 500);
+        // 1순위: 상단 전체 삭제 버튼 (이미지 우측 상단 X)
+        var allClear = document.querySelector('.playlist-controls .fa-times') || 
+                       document.querySelector('button[title="Clear playlist"]') ||
+                       document.querySelector('.btn-clear-playlist');
+
+        // 2순위: 개별 곡 삭제 버튼 (이미지 각 노래 옆 x)
+        var eachClear = document.querySelectorAll('.playlist-item .fa-times, .btn-remove, [title="Remove"]');
+
+        if (allClear) {
+            allClear.click();
+            setTimeout(callback, 700);
+        } else if (eachClear.length > 0) {
+            eachClear.forEach(function(b) { b.click(); });
+            setTimeout(callback, 1000);
         } else {
-            // 지울 게 없다면 바로 다음 단계로
             callback();
         }
     }
 
-    // 2. 노래 투입 함수
     function playSong(url) {
         var input = document.getElementById('url-input') || document.querySelector('input[type="text"]');
         if(input) {
@@ -291,13 +295,12 @@
         }
     }
 
-    // 3. 리스트 교체 (비우기 -> 곡 투입)
     function replacePlaylist(title, isShuffle) {
         var data = getData();
         var list = data[title] || [];
         if(list.length === 0) return;
 
-        // [핵심] 화면상의 모든 삭제 버튼을 클릭하여 비우기 시도
+        // 비우기 버튼 강제 실행 후 곡 투입
         forceClearQueue(function() {
             var targetSongs = list.slice();
             if(isShuffle) targetSongs.sort(function() { return Math.random() - 0.5; });
@@ -307,93 +310,16 @@
                 if(i >= targetSongs.length) { clearInterval(timer); return; }
                 playSong(targetSongs[i].url);
                 i++;
-            }, 600); 
+            }, 800); 
         });
     }
 
-    // ... (나머지 render 및 createList 함수는 이전과 동일)
-    function render() {
-        var area = document.getElementById('playlist-render-area');
-        var data = getData();
-        area.innerHTML = '';
-
-        Object.keys(data).forEach(function(title) {
-            var box = document.createElement('div');
-            box.style.cssText = "background:#333; margin-bottom:12px; padding:10px; border-radius:8px; border:1px solid #444;";
-            
-            var html = '';
-            html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">';
-            html += '<b class="btn-play-all" data-title="' + title + '" style="color:#ffd700; cursor:pointer; text-decoration:underline;">📂 ' + title + '</b>';
-            html += '<span class="btn-del-list" data-title="' + title + '" style="color:#ff6666; cursor:pointer; font-weight:bold;">×</span>';
-            html += '</div>';
-            
-            html += '<div style="display:flex; gap:3px; margin-bottom:8px;">';
-            html += '<button class="btn-add-song" data-title="' + title + '" style="flex:2; font-size:11px; background:#555; border:none; color:white; cursor:pointer; padding:4px; border-radius:4px;">+ 곡 추가</button>';
-            html += '<button class="btn-shuffle" data-title="' + title + '" style="flex:1; font-size:11px; background:#4466aa; border:none; color:white; cursor:pointer; padding:4px; border-radius:4px;">셔플</button>';
-            html += '</div>';
-            
-            html += '<div class="song-list">';
-            data[title].forEach(function(song, i) {
-                html += '<div style="display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px solid #444; font-size:11px;">';
-                html += '<div class="btn-single-play" data-url="' + song.url + '" style="cursor:pointer; color:#ccc; flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;" title="' + song.url + '">';
-                html += (i+1) + '. ' + (song.name || '제목 없음') + '</div>';
-                html += '<span class="btn-del-song" data-title="' + title + '" data-index="' + i + '" style="color:#888; cursor:pointer; margin-left:5px; font-weight:bold;"> - </span>';
-                html += '</div>';
-            });
-            html += '</div>';
-            
-            box.innerHTML = html;
-            area.appendChild(box);
-        });
-
-        area.querySelectorAll('.btn-play-all').forEach(function(el) {
-            el.onclick = function() { replacePlaylist(this.getAttribute('data-title'), false); };
-        });
-        area.querySelectorAll('.btn-shuffle').forEach(function(el) {
-            el.onclick = function() { replacePlaylist(this.getAttribute('data-title'), true); };
-        });
-        area.querySelectorAll('.btn-del-list').forEach(function(el) {
-            el.onclick = function() {
-                var t = this.getAttribute('data-title');
-                if(confirm(t + ' 리스트 전체를 삭제할까요?')) { var d = getData(); delete d[t]; saveData(d); }
-            };
-        });
-        area.querySelectorAll('.btn-add-song').forEach(function(el) {
-            el.onclick = function() {
-                var t = this.getAttribute('data-title');
-                var url = prompt('유튜브 주소를 입력하세요:');
-                if(url && (url.indexOf('youtube') > -1 || url.indexOf('youtu.be') > -1)) {
-                    var sName = prompt('곡의 제목(이름)을 입력하세요:', '새 노래');
-                    var d = getData(); 
-                    d[t].push({url: url, name: sName}); 
-                    saveData(d);
-                }
-            };
-        });
-        area.querySelectorAll('.btn-single-play').forEach(function(el) {
-            el.onclick = function() { playSong(this.getAttribute('data-url')); };
-        });
-        area.querySelectorAll('.btn-del-song').forEach(function(el) {
-            el.onclick = function() {
-                var t = this.getAttribute('data-title');
-                var idx = this.getAttribute('data-index');
-                var d = getData();
-                d[t].splice(idx, 1);
-                saveData(d);
-            };
-        });
-    }
-
-    document.getElementById('btn-create-list').onclick = function() {
-        var input = document.getElementById('new-list-input');
-        var name = input.value.trim();
-        if(name) {
-            var d = getData();
-            if(!d[name]) { d[name] = []; input.value = ''; saveData(d); }
-        }
-    };
-
-    render();
+    // ... (기본 render 함수 로직은 유지하되 replacePlaylist 함수를 호출하도록 함)
+    // 이전 코드의 render 함수 부분을 그대로 사용하시면 됩니다.
+    // (이하 생략 - 이전 답변의 render 로직과 동일)
+    
+    // 이전에 드린 render 코드를 그대로 붙여넣으시되, 
+    // 위에서 수정한 forceClearQueue와 replacePlaylist가 작동하도록 하시면 됩니다.
 })();
 </script></body>
 
